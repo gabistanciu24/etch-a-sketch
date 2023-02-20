@@ -12,6 +12,7 @@ const clearButton = document.getElementById("clear-btn");
 let colorValue = document.getElementById("color-picker");
 let currentMode = DEFAULT_MODE;
 let currentSize = 0;
+let sliderPosition = 0;
 
 let clickedColorButton = () => {
   colorButton.classList.add("active-btn");
@@ -47,7 +48,6 @@ document.body.onmouseup = () => (isDrawing = false);
 let boardSize = (size) => {
   board.style.gridTemplateColumns = "repeat(" + size + ",1fr)";
   board.style.gridTemplateRows = "repeat(" + size + ",1fr)";
-  currentSize = size;
   for (let i = 0; i < size * size; i++) {
     let square = document.createElement("div");
     square.style.backgroundColor = "white";
@@ -55,7 +55,9 @@ let boardSize = (size) => {
     square.addEventListener("mousedown", drawBoard);
     board.appendChild(square);
   }
+  currentSize = size;
 };
+boardSize(16);
 
 let updateBoard = (size) => {
   clearBoard();
@@ -66,23 +68,11 @@ function clearBoard() {
   board.innerHTML = "";
 }
 
-//continuously update the value while the slider is clicked and held
-currentSliderValue.addEventListener("mousedown", function (e) {
-  currentSliderValue.addEventListener("mousemove", updateSliderValue);
-  clearBoard();
-});
-
-//update the slider value in paragraph
-function updateSliderValue(e) {
+currentSliderValue.oninput = function () {
   showSliderValue.innerHTML =
     currentSliderValue.value + " x " + currentSliderValue.value;
   updateBoard(currentSliderValue.value);
-}
-
-//stops updating the value once the mouse is released
-currentSliderValue.addEventListener("mouseup", function (e) {
-  showSliderValue.removeEventListener("mousemove", updateSliderValue);
-});
+};
 
 function changeMode(mode) {
   if (mode === "rainbow") {
@@ -112,6 +102,4 @@ function drawBoard(e) {
   }
 }
 
-window.onload = () => {
-  boardSize(DEFAULT_SIZE);
-};
+window.onload = boardSize(DEFAULT_SIZE);
