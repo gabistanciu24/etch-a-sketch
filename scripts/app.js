@@ -38,10 +38,17 @@ let clickedClearButton = () => {
   updateBoard(currentSize);
 };
 
+let clickedFillButton = () => {
+  fillButton.classList.add("active-btn");
+  currentMode = "fill";
+  changeMode(currentMode);
+};
+
 colorButton.addEventListener("click", clickedColorButton);
 rainbowButton.addEventListener("click", clickedRainbowButton);
 eraserButton.addEventListener("click", clickedEraserButton);
 clearButton.addEventListener("click", clickedClearButton);
+fillButton.addEventListener("click", clickedFillButton);
 
 let isDrawing = false;
 document.body.onmousedown = () => (isDrawing = true);
@@ -57,7 +64,6 @@ let boardSize = (size) => {
     square.addEventListener("mouseover", drawBoard);
     square.addEventListener("mousedown", drawBoard);
     square.addEventListener("click", function () {
-      colorFill(gridItemsArray);
       //uptating the matrix on every click
       updateMatrix();
     });
@@ -67,10 +73,25 @@ let boardSize = (size) => {
 };
 boardSize(16);
 
+let gridItems = board.children;
+let gridItemsArray = Array.from(gridItems);
+let gridItemId = 0;
+
+//convert array into matrix representing the game board/grid
+let toMatrix = (arr, width) => {
+  return arr.reduce(function (rows, key, index) {
+    return (
+      (index % width == 0
+        ? rows.push([key])
+        : rows[rows.length - 1].push(key)) && rows
+    );
+  }, []);
+};
+
 let updateBoard = (size) => {
   clearBoard();
   boardSize(size);
-  visitedNeighbours = [];
+  gridItemsArray2D = toMatrix(gridItemsArray, currentSize);
 };
 
 function clearBoard() {
@@ -81,17 +102,25 @@ currentSliderValue.oninput = function () {
   showSliderValue.innerHTML =
     currentSliderValue.value + " x " + currentSliderValue.value;
   updateBoard(currentSliderValue.value);
+  updateMatrix();
 };
 
 function changeMode(mode) {
   if (mode === "rainbow") {
     colorButton.classList.remove("active-btn");
     eraserButton.classList.remove("active-btn");
+    fillButton.classList.remove("active-btn");
   } else if (mode === "color") {
     eraserButton.classList.remove("active-btn");
     rainbowButton.classList.remove("active-btn");
+    fillButton.classList.remove("active-btn");
   } else if (mode === "eraser") {
     colorButton.classList.remove("active-btn");
+    rainbowButton.classList.remove("active-btn");
+    fillButton.classList.remove("active-btn");
+  } else if (mode === "fill") {
+    colorButton.classList.remove("active-btn");
+    eraserButton.classList.remove("active-btn");
     rainbowButton.classList.remove("active-btn");
   }
 }
@@ -115,160 +144,56 @@ function drawBoard(e) {
     getItem = e.target;
     console.log(getItem);
   } else if (currentMode === "eraser") {
+    e.target.style.backgroundColor = "rgb(255,255,255)";
+  }
+  if (currentMode === "fill") {
+    //get index of the clicked grid cell if fill mode is active
+    getItem = e.target;
+    console.log(getItem);
   }
 }
 
-let gridItems = board.children;
-let gridItemsArray = Array.from(gridItems);
-let gridItemId = 0;
-let visitedNeighbours = [];
-let neighbourIndex = [];
-
-let colorFill = (array) => {
-  if (array.includes(getItem)) {
-    isBordered(array.indexOf(getItem));
-    checkVisited(array.indexOf(getItem));
-    console.log("test1");
-  }
-  for (let i = 0; i < neighbourIndex.length; i++) {
-    if (array.includes(visitedNeighbours[i])) {
-      isBordered(array.indexOf(visitedNeighbours[i]));
-      checkVisited(array.indexOf(visitedNeighbours[i]));
+let fillColor = (array, item) => {
+  updateMatrix();
+  let col;
+  let row;
+  for (let i = 0; i < currentSize * currentSize; i++) {
+    for (let j = 0; j < currentSize * currentSize; j++) {
+      if (array?.[i]?.[j] === item) {
+        col = i;
+        row = j;
+        console.log(col + " " + row);
+      }
     }
   }
+  let oldColor = item.style.backgroundColor;
+  let newColor = colorValue.value;
+  floodFillCheck(col, row, oldColor, newColor);
 };
 
-let checkVisited = (index, item) => {
-  if (neighbourIndex.includes(index)) {
-    console.log("already there");
-  } else {
-    neighbourIndex.push(index);
-    visitedNeighbours.push(item);
-  }
-};
+let floodFillCheck = (i, j, oldColor, newColor) => {
+  if (
+    i < 0 ||
+    i >= gridItemsArray2D.length ||
+    j < 0 ||
+    j >= gridItemsArray2D[i].length
+  )
+    return;
+  if (gridItemsArray2D[i][j].style.backgroundColor !== oldColor) return;
 
-let isBordered = (index) => {
-  let auxIndex = 0;
-  let auxItem = 0;
+  gridItemsArray2D[i][j].style.backgroundColor = newColor;
 
-  if (gridItemsArray[index] && gridItemsArray[index]) {
-    console.log("item is defined");
-  } else console.log("item is not defined");
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index - currentSize].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index - currentSize] !== undefined)
-  ) {
-    console.log("not the same color " + gridItemsArray[index - currentSize]);
-    auxItem = gridItemsArray[index - currentSize];
-    auxIndex = index - currentSize;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index - (currentSize - 1)].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index - (currentSize - 1)] !== undefined)
-  ) {
-    console.log(
-      "not the same color " + gridItemsArray[index - (currentSize - 1)]
-    );
-    auxItem = gridItemsArray[index - (currentSize - 1)];
-    auxIndex = index - currentSize - 1;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index - (currentSize + 1)].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index - (currentSize + 1)])
-  ) {
-    console.log(
-      "not the same color " + gridItemsArray[index - (currentSize + 1)]
-    );
-    auxItem = gridItemsArray[index - (currentSize + 1)];
-    auxIndex = index - currentSize + 1;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index - 1].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index - 1] !== undefined)
-  ) {
-    console.log("not the same color " + gridItemsArray[index - 1]);
-    auxItem = gridItemsArray[index - 1];
-    auxIndex = index - 1;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index + 1].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index + 1] !== undefined)
-  ) {
-    console.log("not the same color " + gridItemsArray[index + 1]);
-    auxItem = gridItemsArray[index + 1];
-    auxIndex = index + 1;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index + (currentSize - 1)].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index + (currentSize - 1)] !== undefined)
-  ) {
-    console.log(
-      "not the same color " + gridItemsArray[index + (currentSize - 1)]
-    );
-    auxItem = gridItemsArray[index + (currentSize - 1)];
-    auxIndex = index + currentSize - 1;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index + currentSize].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index + currentSize] !== undefined)
-  ) {
-    console.log("not the same color " + gridItemsArray[index + currentSize]);
-    auxItem = gridItemsArray[index + currentSize];
-    auxIndex = index + currentSize;
-    checkVisited(auxIndex, auxItem);
-  }
-  if (
-    gridItemsArray[index].style.backgroundColor ===
-      gridItemsArray[index + (currentSize + 1)].style.backgroundColor &&
-    (gridItemsArray[index] !== undefined ||
-      gridItemsArray[index + (currentSize + 1)] !== undefined)
-  ) {
-    console.log(
-      "not the same color " + gridItemsArray[index + (currentSize + 1)]
-    );
-    auxItem = gridItemsArray[index + (currentSize + 1)];
-    auxIndex = index + currentSize + 1;
-    checkVisited(auxIndex, auxItem);
-  }
+  floodFillCheck(i + 1, j, oldColor, newColor);
+  floodFillCheck(i - 1, j, oldColor, newColor);
+  floodFillCheck(i, j + 1, oldColor, newColor);
+  floodFillCheck(i, j - 1, oldColor, newColor);
 };
 
 let updateMatrix = () => {
   gridItems = board.children;
   gridItemsArray = Array.from(gridItems);
-  // gridItemsArray2D = toMatrix(gridItemsArray, currentSize);
+  gridItemsArray2D = toMatrix(gridItemsArray, currentSize);
 };
 
-//convert array into matrix representing the game board/grid
-// let toMatrix = (arr, width) => {
-//   return arr.reduce(function (rows, key, index) {
-//     return (
-//       (index % width == 0
-//         ? rows.push([key])
-//         : rows[rows.length - 1].push(key)) && rows
-//     );
-//   }, []);
-// };
-
-// let gridItemsArray2D = toMatrix(gridItemsArray, currentSize);
-
+let gridItemsArray2D = toMatrix(gridItemsArray, currentSize);
 window.onload = boardSize(DEFAULT_SIZE);
