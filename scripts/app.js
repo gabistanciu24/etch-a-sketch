@@ -50,10 +50,13 @@ eraserButton.addEventListener("click", clickedEraserButton);
 clearButton.addEventListener("click", clickedClearButton);
 fillButton.addEventListener("click", clickedFillButton);
 
+//checking if the mouse-click is held while drawing on the board in order to
+//implement the functionality to click and hold and draw while holding the click
 let isDrawing = false;
 document.body.onmousedown = () => (isDrawing = true);
 document.body.onmouseup = () => (isDrawing = false);
 
+//creating the board based on the slider value and making the board square-shaped at the same time
 let boardSize = (size) => {
   board.style.gridTemplateColumns = "repeat(" + size + ",1fr)";
   board.style.gridTemplateRows = "repeat(" + size + ",1fr)";
@@ -66,6 +69,10 @@ let boardSize = (size) => {
     square.addEventListener("click", function () {
       //uptating the matrix on every click
       updateMatrix();
+      if (currentMode === "fill") {
+        //when the drawing mode is fill, call the fillColor function to fill the area the user clicked in
+        fillColor(gridItemsArray2D, getItem);
+      }
     });
     board.appendChild(square);
   }
@@ -73,6 +80,7 @@ let boardSize = (size) => {
 };
 boardSize(16);
 
+//getting all the items from the grid in order to use them in the Flood Fill algorithm
 let gridItems = board.children;
 let gridItemsArray = Array.from(gridItems);
 let gridItemId = 0;
@@ -98,6 +106,7 @@ function clearBoard() {
   board.innerHTML = "";
 }
 
+//update the board and the items matrix when resizing the board
 currentSliderValue.oninput = function () {
   showSliderValue.innerHTML =
     currentSliderValue.value + " x " + currentSliderValue.value;
@@ -105,6 +114,8 @@ currentSliderValue.oninput = function () {
   updateMatrix();
 };
 
+//changing drawing modes
+//making other 'available' buttons unavailable
 function changeMode(mode) {
   if (mode === "rainbow") {
     colorButton.classList.remove("active-btn");
@@ -127,13 +138,15 @@ function changeMode(mode) {
 
 function drawBoard(e) {
   if (e.type === "mouseover" && !isDrawing) return;
+  //if the drawing mode is 'color' change background color of the selected cell to color selector's value
   if (currentMode === "color") {
     e.target.style.backgroundColor = colorValue.value;
     e.target.setAttribute("id", "color-mode");
     //get index of the clicked grid cell if color mode is active
     getItem = e.target;
-    console.log(getItem);
+    //console.log(getItem);
   } else if (currentMode === "rainbow") {
+    //create random color for the selected cells when the drawing mode is set to rainbow
     const rgbR = Math.floor(Math.random() * 256);
     const rgbG = Math.floor(Math.random() * 256);
     const rgbB = Math.floor(Math.random() * 256);
@@ -142,27 +155,33 @@ function drawBoard(e) {
     e.target.setAttribute("id", "rainbow-mode");
     //get index of the clicked grid cell if rainbow mode is active
     getItem = e.target;
-    console.log(getItem);
+    //console.log(getItem);
   } else if (currentMode === "eraser") {
     e.target.style.backgroundColor = "rgb(255,255,255)";
   }
   if (currentMode === "fill") {
     //get index of the clicked grid cell if fill mode is active
     getItem = e.target;
-    console.log(getItem);
+    //console.log(getItem);
   }
 }
 
+//finding the clicked div's row and column indexes in order to use them
+//in the FloodFill algorithm to apply BFS to find all the items and change their
+//color till it reaches the outer border or any other closed inner border
 let fillColor = (array, item) => {
   updateMatrix();
   let col;
   let row;
   for (let i = 0; i < currentSize * currentSize; i++) {
     for (let j = 0; j < currentSize * currentSize; j++) {
+      //got an error when I tried to verify the item directly array[i][j]===item and switched to optional chaining
+      //in order to short-circuit and return 'undefined' or null when checking for items outside the playing board
+      //using optional chaining for when the cell coloring reaches the border
       if (array?.[i]?.[j] === item) {
         col = i;
         row = j;
-        console.log(col + " " + row);
+        //console.log(col + " " + row);
       }
     }
   }
@@ -171,18 +190,14 @@ let fillColor = (array, item) => {
   floodFillCheck(col, row, oldColor, newColor);
 };
 
+//flood fill algorithm to fill similarly-colored areas with a different(selected) color
 let floodFillCheck = (i, j, oldColor, newColor) => {
-  if (
-    i < 0 ||
-    i >= gridItemsArray2D.length ||
-    j < 0 ||
-    j >= gridItemsArray2D[i].length
-  )
-    return;
+  if (i < 0 || i >= currentSize || j < 0 || j >= currentSize) return;
   if (gridItemsArray2D[i][j].style.backgroundColor !== oldColor) return;
 
   gridItemsArray2D[i][j].style.backgroundColor = newColor;
-
+  //based on the BFS algorithm, using backtracking we are constantly checking for cells
+  //with different background color while applying the new selected color on them
   floodFillCheck(i + 1, j, oldColor, newColor);
   floodFillCheck(i - 1, j, oldColor, newColor);
   floodFillCheck(i, j + 1, oldColor, newColor);
