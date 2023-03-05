@@ -6,9 +6,6 @@
 
 body {
   background-color: rgb(20, 40, 80);
-  width: 100vw;
-  height: 100vw;
-  overflow: hidden;
 }
 
 header {
@@ -294,4 +291,27 @@ main > .board-wrapper {
 
 .active-btn:hover {
   box-shadow: 0px 0px 0px 1px #00a8cc;
+}
+
+@media only screen and (max-device-width: 768px) {
+  header {
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  header > h1 {
+    font-size: 2rem;
+  }
+  main {
+    flex-direction: column-reverse;
+    width: 100vw;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .board {
+    width: 21rem;
+    height: 21rem;
+  }
 }
